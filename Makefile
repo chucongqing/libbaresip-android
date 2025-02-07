@@ -2,7 +2,8 @@
 
 # Path to Android NDK
 # NDK version must match ndkVersion in app/build.gradle
-NDK_PATH  := /opt/Android/ndk/$(shell sed -n '/ndkVersion/p' /usr/src/baresip-studio/app/build.gradle | sed 's/[^0-9.]*//g')
+#NDK_PATH  := /opt/Android/ndk/$(shell sed -n '/ndkVersion/p' /usr/src/baresip-studio/app/build.gradle | sed 's/[^0-9.]*//g')
+NDK_PATH := /home/ccq/dev/opensource/android/android-ndk-r27c
 
 # Android API level
 API_LEVEL := 28
@@ -10,8 +11,13 @@ API_LEVEL := 28
 # Set default from following values: [armeabi-v7a, arm64-v8a, x86_64]
 ANDROID_TARGET_ARCH := arm64-v8a
 
+MKFILE_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 # Directory where libraries and include files are instelled
-OUTPUT_DIR := /usr/src/baresip-studio/distribution.video
+# OUTPUT_DIR := /usr/src/baresip-studio/distribution.video
+OUTPUT_DIR := $(MKFILE_DIR)/distribution.video
+
+# debug or release
+BUILD_TYPE:=Debug
 
 # -------------------- GENERATED VALUES --------------------
 
@@ -110,6 +116,7 @@ COMMON_FLAGS := \
 
 CMAKE_ANDROID_FLAGS := \
 	-DANDROID=ON \
+	-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
 	-DANDROID_PLATFORM=$(API_LEVEL) \
 	-DCMAKE_SYSTEM_NAME=Android \
 	-DCMAKE_SYSTEM_VERSION=$(API_LEVEL) \
@@ -120,9 +127,10 @@ CMAKE_ANDROID_FLAGS := \
 	-DCMAKE_C_COMPILER=$(CC) \
 	-DCMAKE_CXX_COMPILER=$(CXX) \
 	-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-	-DCMAKE_BUILD_TYPE=Release
+	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
-MODULES := "webrtc_aecm;augain;aaudio;dtls_srtp;opus;g711;g722;g7221;g726;codec2;amr;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;vp8;vp9;selfview;av1;snapshot"
+#MODULES := "webrtc_aecm;augain;aaudio;dtls_srtp;opus;g711;g722;g7221;g726;codec2;amr;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;vp8;vp9;selfview;av1;snapshot"
+MODULES := "webrtc_aecm;augain;aaudio;dtls_srtp;opus;g711;g722;g7221;g726;codec2;amr;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;vp8;av1;snapshot"
 
 APP_MODULES := "g729"
 
@@ -311,9 +319,13 @@ ffmpeg:
 	cp $(FFMPEG_LIB)/ffmpeg/lib/libavfilter.so $(OUTPUT_DIR)/ffmpeg/lib/$(ANDROID_TARGET_ARCH)
 	cp $(FFMPEG_LIB)/ffmpeg/lib/libswscale.so $(OUTPUT_DIR)/ffmpeg/lib/$(ANDROID_TARGET_ARCH)
 
+RM_OLD:=1
+
+CLEAN_CMD := $(if $(filter 1,$(RM_OLD)),rm -rf build && rm -rf .cache && mkdir build && cd build,cd build)
+
 libre.a: Makefile
 	cd re && \
-	rm -rf build && rm -rf .cache && mkdir build && cd build && \
+	$(CLEAN_CMD) && \
 	cmake .. \
 		$(CMAKE_ANDROID_FLAGS) \
 		-DCMAKE_FIND_ROOT_PATH="$(NDK_PATH);$(PWD)/openssl" \
@@ -321,9 +333,19 @@ libre.a: Makefile
 		-DOPENSSL_ROOT_DIR=$(PWD)/openssl && \
 	cmake --build . --target re -j$(CPU_COUNT)
 
-libbaresip: Makefile amr g729 codec2 g7221 gzrtp openssl opus sndfile spandsp webrtc ffmpeg libre.a
+libre-test:
+	cd re && \
+	$(CLEAN_CMD) && \
+	cmake .. \
+		-DOPENSSL_VERSION_MAJOR=3 &&\
+	cmake --build . --target retest
+
+
+
+libbaresip-deps: Makefile amr g729 codec2 g7221 gzrtp openssl opus sndfile spandsp webrtc ffmpeg libre.a
+libbaresip:
 	cd baresip && \
-	rm -rf build && rm -rf .cache && mkdir build && cd build && \
+	$(CLEAN_CMD) && \
 	cmake .. \
 		$(CMAKE_ANDROID_FLAGS) \
 		-DCMAKE_FIND_ROOT_PATH="$(PWD)/amr;$(PWD)/vo-amrwbenc;$(PWD)/openssl;$(FFMPEG_LIB)/ffmpeg;$(FFMPEG_LIB)/libaom;$(FFMPEG_LIB)/libvpx;$(FFMPEG_LIB)/libpng" \
@@ -372,8 +394,8 @@ libbaresip: Makefile amr g729 codec2 g7221 gzrtp openssl opus sndfile spandsp we
 	cp baresip/include/baresip.h $(OUTPUT_DIR)/baresip/include
 
 all:
-	make libbaresip ANDROID_TARGET_ARCH=armeabi-v7a
 	make libbaresip ANDROID_TARGET_ARCH=arm64-v8a
+#	make libbaresip ANDROID_TARGET_ARCH=armeabi-v7a
 #	make libbaresip ANDROID_TARGET_ARCH=x86_64
 
 .PHONY: download-sources
