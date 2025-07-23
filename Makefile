@@ -130,7 +130,7 @@ CMAKE_ANDROID_FLAGS := \
 	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
 #MODULES := "webrtc_aecm;augain;aaudio;dtls_srtp;opus;g711;g722;g7221;g726;codec2;amr;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;vp8;vp9;selfview;av1;snapshot"
-MODULES := "webrtc_aecm;augain;aaudio;dtls_srtp;opus;g711;g722;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;snapshot"
+MODULES := "fakevideo;webrtc_aecm;augain;aaudio;dtls_srtp;opus;g711;g722;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;snapshot"
 
 APP_MODULES := "g729"
 
