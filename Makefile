@@ -5,7 +5,8 @@ SDK_PATH := /opt/Android
 
 # Path to Android NDK
 # NDK version must match ndkVersion in app/build.gradle.kts
-NDK_PATH  := /opt/Android/ndk/$(shell sed -n '/ndkVersion/p' /usr/src/baresip-studio/app/build.gradle.kts | sed 's/[^0-9.]*//g')
+# NDK_PATH  := /opt/Android/ndk/$(shell sed -n '/ndkVersion/p' /usr/src/baresip-studio/app/build.gradle.kts | sed 's/[^0-9.]*//g')
+NDK_PATH = /home/chucongqing/dev/vendors/android/sdk/android-ndk-r27c
 
 # Android API level
 API_LEVEL := 28
@@ -13,8 +14,15 @@ API_LEVEL := 28
 # Set default from following values: [armeabi-v7a, arm64-v8a, x86_64]
 ANDROID_TARGET_ARCH := arm64-v8a
 
+# 获取 Makefile 的完整路径（包含文件名）
+MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+
+# 获取 Makefile 所在的目录路径（不包含文件名）
+CUR_DIR := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
+
 # Directory where libraries and include files are installed
-OUTPUT_DIR := /usr/src/baresip-studio/distribution.video
+# OUTPUT_DIR := /usr/src/baresip-studio/distribution.video
+OUTPUT_DIR := $(CUR_DIR)/distribution.video
 
 # -------------------- GENERATED VALUES --------------------
 
@@ -88,7 +96,8 @@ CMAKE_ANDROID_FLAGS := \
 	-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
 	-DCMAKE_BUILD_TYPE=Release
 
-MODULES := "augain;aaudio;dtls_srtp;opus;g711;libg722;g7221;codec2;amr;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;mixminus;debug_cmd;avcodec;avformat;vp8;vp9;selfview;av1;snapshot"
+# MODULES := "augain;aaudio;dtls_srtp;opus;g711;libg722;g7221;codec2;amr;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;mixminus;debug_cmd;avcodec;avformat;vp8;vp9;selfview;av1;snapshot"
+MODULES := "auresamp;fakevideo;augain;aaudio;dtls_srtp;opus;g711;libg722;gzrtp;stun;turn;ice;presence;mwi;mixminus;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;snapshot"
 
 APP_MODULES := "g729"
 
@@ -181,7 +190,7 @@ gzrtp:
 
 .PHONY: openssl
 openssl:
-	-make distclean -C openssl
+	# -make distclean -C openssl
 	cd openssl && \
 	ANDROID_NDK_ROOT=$(NDK_PATH) PATH=$(PATH) ./Configure $(OPENSSL_ARCH) -U__ANDROID_API__ -D__ANDROID_API__=$(API_LEVEL) no-apps no-asm no-docs no-engine no-gost no-legacy no-shared no-ssl no-tests no-zlib && \
 	make -j$(CPU_COUNT) && \
@@ -288,7 +297,9 @@ libre.a: Makefile
 		-DOPENSSL_ROOT_DIR=$(PWD)/openssl && \
 	cmake --build . --target re -j$(CPU_COUNT)
 
-libbaresip: Makefile amr g729 codec2 g722 g7221 gzrtp openssl opus sndfile png ffmpeg libyuv libre.a
+libbaresip-deps: Makefile amr g729 codec2 g722 g7221 gzrtp openssl opus sndfile png ffmpeg libyuv libre.a
+
+libbaresip:
 	cd baresip && \
 	rm -rf build && rm -rf .cache && mkdir build && cd build && \
 	cmake .. \
@@ -358,7 +369,7 @@ libbaresip: Makefile amr g729 codec2 g722 g7221 gzrtp openssl opus sndfile png f
 
 all:
 	make libbaresip ANDROID_TARGET_ARCH=arm64-v8a
-	make libbaresip ANDROID_TARGET_ARCH=armeabi-v7a
+	# make libbaresip ANDROID_TARGET_ARCH=armeabi-v7a
 
 debug:	all
 	make libbaresip ANDROID_TARGET_ARCH=x86_64
@@ -382,10 +393,11 @@ download-sources:
 	git clone https://github.com/pnggroup/libpng.git -b v1.6.48 --single-branch png
 	git clone https://github.com/Javernaut/ffmpeg-android-maker.git -b master --single-branch
 	git clone https://chromium.googlesource.com/libyuv/libyuv
+	make patch-src
+patch-src:
 	patch -d g7221 -p1 < g7221-patch
 	patch -d re -p1 < re-patch
 	patch -d ffmpeg-android-maker -p1 < ffmpeg-android-maker.patch
-
 clean:
 	-make distclean -C amr
 	make distclean -C baresip
