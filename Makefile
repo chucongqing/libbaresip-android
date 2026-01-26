@@ -96,8 +96,9 @@ CMAKE_ANDROID_FLAGS := \
 	-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
 	-DCMAKE_BUILD_TYPE=Release
 
+# todo add libg722
 # MODULES := "augain;aaudio;dtls_srtp;opus;g711;libg722;g7221;codec2;amr;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;mixminus;debug_cmd;avcodec;avformat;vp8;vp9;selfview;av1;snapshot"
-MODULES := "auresamp;fakevideo;augain;aaudio;dtls_srtp;opus;g711;libg722;gzrtp;stun;turn;ice;presence;mwi;mixminus;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;snapshot"
+MODULES := "auresamp;fakevideo;augain;aaudio;dtls_srtp;opus;g711;gzrtp;stun;turn;ice;presence;mwi;mixminus;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;snapshot"
 
 APP_MODULES := "g729"
 
@@ -297,7 +298,7 @@ libre.a: Makefile
 		-DOPENSSL_ROOT_DIR=$(PWD)/openssl && \
 	cmake --build . --target re -j$(CPU_COUNT)
 
-libbaresip-deps: Makefile amr g729 codec2 g722 g7221 gzrtp openssl opus sndfile png ffmpeg libyuv libre.a
+libbaresip-deps: Makefile g729 g722 g7221 gzrtp openssl opus sndfile png ffmpeg libyuv libre.a
 
 libbaresip:
 	cd baresip && \
