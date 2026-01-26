@@ -98,7 +98,7 @@ CMAKE_ANDROID_FLAGS := \
 
 # todo add libg722
 # MODULES := "augain;aaudio;dtls_srtp;opus;g711;libg722;g7221;codec2;amr;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;mixminus;debug_cmd;avcodec;avformat;vp8;vp9;selfview;av1;snapshot"
-MODULES := "auresamp;fakevideo;augain;aaudio;dtls_srtp;opus;g711;gzrtp;stun;turn;ice;presence;mwi;mixminus;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;snapshot"
+MODULES := "auresamp;fakevideo;augain;aaudio;webrtc_aecm;dtls_srtp;opus;g711;gzrtp;stun;turn;ice;presence;mwi;mixminus;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;snapshot"
 
 APP_MODULES := "g729"
 
@@ -288,6 +288,18 @@ libyuv:
 	mkdir -p $(OUTPUT_DIR)/libyuv/include
 	cp -r libyuv/include/* $(OUTPUT_DIR)/libyuv/include
 
+.PHONY: webrtc
+webrtc:
+	cd webrtc && \
+	rm -rf obj && \
+	$(NDK_PATH)/ndk-build -j$(CPU_COUNT) APP_PLATFORM=android-$(API_LEVEL)
+	rm -rf $(OUTPUT_DIR)/webrtc/lib/$(ANDROID_TARGET_ARCH)
+	mkdir -p $(OUTPUT_DIR)/webrtc/lib/$(ANDROID_TARGET_ARCH)
+	cp webrtc/obj/local/$(ANDROID_TARGET_ARCH)/libwebrtc.a $(OUTPUT_DIR)/webrtc/lib/$(ANDROID_TARGET_ARCH)
+
+        #--enable-android-media-codec \
+        #--enable-x264 --enable-libaom --enable-libvpx \
+
 libre.a: Makefile
 	cd re && \
 	rm -rf build && rm -rf .cache && mkdir build && cd build && \
@@ -298,7 +310,9 @@ libre.a: Makefile
 		-DOPENSSL_ROOT_DIR=$(PWD)/openssl && \
 	cmake --build . --target re -j$(CPU_COUNT)
 
-libbaresip-deps: Makefile g729 g722 g7221 gzrtp openssl opus sndfile png ffmpeg libyuv libre.a
+
+
+libbaresip-deps: Makefile g729 g722 g7221 gzrtp openssl opus sndfile png ffmpeg libyuv webrtc libre.a
 
 libbaresip:
 	cd baresip && \
@@ -346,6 +360,8 @@ libbaresip:
 		-DGZRTP_LIBRARY="$(OUTPUT_DIR)/gzrtp/lib/$(ANDROID_TARGET_ARCH)/libzrtpcppcore.a" \
 		-DSNDFILE_INCLUDE_DIR="$(PWD)/sndfile/include" \
 		-DSNDFILE_LIBRARIES="$(OUTPUT_DIR)/sndfile/lib/$(ANDROID_TARGET_ARCH)/libsndfile.a" \
+		-DWEBRTC_AECM_INCLUDE_DIR=$(PWD)/webrtc/include \
+		-DWEBRTC_AECM_LIBRARY=$(OUTPUT_DIR)/webrtc/lib/$(ANDROID_TARGET_ARCH)/libwebrtc.a \
 		-DCMAKE_C_COMPILER="clang" \
 		-DCMAKE_CXX_COMPILER="clang++" \
 		-DAPP_MODULES_DIR=$(PWD)/baresip-app-modules \
@@ -395,10 +411,19 @@ download-sources:
 	git clone https://github.com/Javernaut/ffmpeg-android-maker.git -b master --single-branch
 	git clone https://chromium.googlesource.com/libyuv/libyuv
 	make patch-src
+
+
 patch-src:
 	patch -d g7221 -p1 < g7221-patch
 	patch -d re -p1 < re-patch
 	patch -d ffmpeg-android-maker -p1 < ffmpeg-android-maker.patch
+
+.PHONY: download-webrtc
+
+download-webrtc:
+	rm -fr webrtc
+	git clone https://github.com/chucongqing/libwebrtc -b mobile --single-branch webrtc
+	cp -r abseil-cpp/absl webrtc/jni/src/webrtc
 clean:
 	-make distclean -C amr
 	make distclean -C baresip
