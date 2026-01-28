@@ -98,7 +98,7 @@ CMAKE_ANDROID_FLAGS := \
 
 # todo add libg722
 # MODULES := "augain;aaudio;dtls_srtp;opus;g711;libg722;g7221;codec2;amr;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;mixminus;debug_cmd;avcodec;avformat;vp8;vp9;selfview;av1;snapshot"
-MODULES := "auresamp;fakevideo;augain;aaudio;webrtc_aecm;dtls_srtp;opus;g711;gzrtp;stun;turn;ice;presence;mwi;mixminus;account;natpmp;srtp;uuid;sndfile;debug_cmd;avcodec;avformat;snapshot"
+MODULES := "auresamp;fakevideo;augain;aaudio;webrtc_aecm;dtls_srtp;opus;g711;gzrtp;stun;turn;ice;presence;mwi;mixminus;account;natpmp;srtp;uuid;sndfile;debug_cmd;avformat;snapshot"
 
 APP_MODULES := "g729"
 
@@ -201,6 +201,7 @@ openssl:
 		$(OUTPUT_DIR)/openssl/lib/$(ANDROID_TARGET_ARCH)
 	cp openssl/libssl.a \
 		$(OUTPUT_DIR)/openssl/lib/$(ANDROID_TARGET_ARCH)
+	cp -rf openssl/include $(OUTPUT_DIR)/openssl
 
 .PHONY: opus
 opus:
@@ -243,6 +244,17 @@ png:
 
 .PHONY: ffmpeg
 ffmpeg:
+	cd ffmpeg-android-maker && \
+	ANDROID_SDK_HOME=$(SDK_PATH) \
+	ANDROID_NDK_HOME=$(NDK_PATH) \
+	./ffmpeg-android-maker.sh --target-abis=$(ANDROID_TARGET_ARCH) --android-api-level=$(API_LEVEL) #--enable-libvpx --enable-libaom --enable-libx264 --enable-libx265
+	mkdir -p $(OUTPUT_DIR)/ffmpeg/include
+	cp -r ffmpeg-android-maker/build/ffmpeg/$(ANDROID_TARGET_ARCH)/include/* $(OUTPUT_DIR)/ffmpeg/include
+	rm -rf $(OUTPUT_DIR)/ffmpeg/lib/$(ANDROID_TARGET_ARCH)
+	mkdir -p $(OUTPUT_DIR)/ffmpeg/lib/$(ANDROID_TARGET_ARCH)
+	cp ffmpeg-android-maker/output/lib/$(ANDROID_TARGET_ARCH)/*.so $(OUTPUT_DIR)/ffmpeg/lib/$(ANDROID_TARGET_ARCH)
+
+ffmpeg-origin:
 	cd ffmpeg-android-maker && \
 	ANDROID_SDK_HOME=$(SDK_PATH) \
 	ANDROID_NDK_HOME=$(NDK_PATH) \
@@ -335,10 +347,6 @@ libbaresip:
 		-DFFMPEG_avdevice_INCLUDE_DIR=$(OUTPUT_DIR)/ffmpeg/include \
 		-DFFMPEG_avutil_LIBRARY=$(OUTPUT_DIR)/ffmpeg/lib/$(ANDROID_TARGET_ARCH)/libavutil.so \
 		-DFFMPEG_avutil_INCLUDE_DIR=$(OUTPUT_DIR)/ffmpeg/include \
-		-DVPX_INCLUDE_DIR=$(OUTPUT_DIR)/vpx/include \
-		-DVPX_LIBRARY=$(OUTPUT_DIR)/vpx/lib/$(ANDROID_TARGET_ARCH)/libvpx.a \
-		-DAOM_INCLUDE_DIR=$(OUTPUT_DIR)/aom/include \
-		-DAOM_LIBRARY=$(OUTPUT_DIR)/aom/lib/$(ANDROID_TARGET_ARCH)/libaom.a \
 		-DPNG_INCLUDE_DIR=$(PWD)/png \
 		-DPNG_LIBRARY=$(OUPUT_DIR)/png/lib/$(ANDROID_TARGET_ARCH)/libpng.a \
 		-DAAUDIO_INCLUDE_DIR=${TOOLCHAIN}/sysroot/usr/include \
