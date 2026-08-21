@@ -98,7 +98,8 @@ CMAKE_ANDROID_FLAGS := \
 
 # todo add libg722
 # MODULES := "augain;aaudio;dtls_srtp;opus;g711;libg722;g7221;codec2;amr;gzrtp;stun;turn;ice;presence;mwi;account;natpmp;srtp;uuid;sndfile;mixminus;debug_cmd;avcodec;avformat;vp8;vp9;selfview;av1;snapshot"
-MODULES := "auresamp;fakevideo;augain;aaudio;webrtc_aecm;dtls_srtp;opus;g711;gzrtp;stun;turn;ice;presence;mwi;mixminus;account;natpmp;srtp;uuid;sndfile;debug_cmd;avformat;snapshot"
+MODULES := "menu;auresamp;fakevideo;augain;aaudio;webrtc_aecm;dtls_srtp;opus;g711;gzrtp;stun;turn;ice;presence;mwi;mixminus;account;natpmp;srtp;uuid;sndfile;debug_cmd;avformat;snapshot"
+#MODULES := "auresamp;fakevideo;augain;aaudio;dtls_srtp;opus;g711;gzrtp;stun;turn;ice;presence;mwi;mixminus;account;natpmp;srtp;uuid;sndfile;debug_cmd;avformat;snapshot"
 
 APP_MODULES := "g729"
 
