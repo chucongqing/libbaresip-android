@@ -81,6 +81,31 @@ LD	:= ld.lld
 RANLIB	:= llvm-ranlib
 STRIP	:= llvm-strip
 
+# CMake: prefer mise if available (most stable: `mise exec -- cmake` respects mise.toml),
+# fallback to system cmake with a warning. Recommended version is 3.22.1 for this project.
+# NOTE: PATH is overridden above, so detect mise via absolute path.
+RECOMMENDED_CMAKE := 3.22.1
+MISE_BIN ?= $(shell command -v mise 2>/dev/null || echo $(HOME)/.local/bin/mise)
+HAS_MISE := $(shell test -x "$(MISE_BIN)" && echo 1)
+ifeq ($(HAS_MISE),1)
+  CMAKE ?= $(MISE_BIN) exec -- cmake
+else
+  CMAKE ?= cmake
+endif
+
+.PHONY: check-cmake
+check-cmake:
+	@if [ "$(HAS_MISE)" = "1" ]; then \
+		echo "Using mise cmake: $$($(MISE_BIN) which cmake 2>/dev/null || echo '$(MISE_BIN) exec') ($$($(MISE_BIN) exec -- cmake --version 2>/dev/null | head -1 || $(CMAKE) --version | head -1))"; \
+		echo "  (mise: $(MISE_BIN), recommended: $(RECOMMENDED_CMAKE))"; \
+	else \
+		echo "WARN: mise not found, using system cmake: $$(command -v $(CMAKE) || echo $(CMAKE)) ($$($(CMAKE) --version 2>/dev/null | head -1))"; \
+		echo "WARN: Recommended cmake $(RECOMMENDED_CMAKE) for this project. Install mise: curl https://mise.run | sh && $(MISE_BIN) use --global cmake@4.4.3 && $(MISE_BIN) use cmake@$(RECOMMENDED_CMAKE)"; \
+		if ! $(CMAKE) --version 2>/dev/null | grep -q "$(RECOMMENDED_CMAKE)"; then \
+			echo "WARN: cmake version mismatch, expected $(RECOMMENDED_CMAKE) (found: $$($(CMAKE) --version 2>/dev/null | head -1))"; \
+		fi; \
+	fi
+
 # Android cmake flags
 CMAKE_ANDROID_FLAGS := \
 	-DANDROID=ON \
@@ -128,34 +153,34 @@ amr:
 	cp vo-amrwbenc/.libs/libvo-amrwbenc.a $(OUTPUT_DIR)/amr/lib/$(ANDROID_TARGET_ARCH)/libamrwbenc.a
 
 .PHONY: codec2
-codec2:
+codec2: check-cmake
 	cd codec2 && \
 	rm -rf build && mkdir build && cd build && \
-	cmake .. -DBUILD_SHARED_LIBS=OFF $(CMAKE_ANDROID_FLAGS) && \
-	cmake --build . --target codec2 -j$(CPU_COUNT) && \
+	$(CMAKE) .. -DBUILD_SHARED_LIBS=OFF $(CMAKE_ANDROID_FLAGS) && \
+	$(CMAKE) --build . --target codec2 -j$(CPU_COUNT) && \
 	cp ../src/codec2.h codec2
 	rm -rf $(OUTPUT_DIR)/codec2/lib/$(ANDROID_TARGET_ARCH)
 	mkdir -p $(OUTPUT_DIR)/codec2/lib/$(ANDROID_TARGET_ARCH)
 	cp codec2/build/src/libcodec2.a $(OUTPUT_DIR)/codec2/lib/$(ANDROID_TARGET_ARCH)
 
 .PHONY: g729
-g729:
+g729: check-cmake
 	-make clean -C bcg729
 	cd  bcg729/build && \
 	find . -maxdepth 1 ! -name CMakeLists.txt -type f -delete && \
 	rm -rf build CMakeFiles include src && \
-	cmake ..  $(CMAKE_ANDROID_FLAGS) && \
-	cmake --build . --target bcg729-static -j$(CPU_COUNT)
+	$(CMAKE) ..  $(CMAKE_ANDROID_FLAGS) && \
+	$(CMAKE) --build . --target bcg729-static -j$(CPU_COUNT)
 	rm -rf $(OUTPUT_DIR)/g729/lib/$(ANDROID_TARGET_ARCH)
 	mkdir -p $(OUTPUT_DIR)/g729/lib/$(ANDROID_TARGET_ARCH)
 	cp bcg729/build/src/libbcg729.a $(OUTPUT_DIR)/g729/lib/$(ANDROID_TARGET_ARCH)
 
 .PHONY: g722
-g722:
+g722: check-cmake
 	cd g722 && \
 	rm -rf build && mkdir build && cd build && \
-	cmake .. $(CMAKE_ANDROID_FLAGS) && \
-	cmake --build . -j$(CPU_COUNT) && \
+	$(CMAKE) .. $(CMAKE_ANDROID_FLAGS) && \
+	$(CMAKE) --build . -j$(CPU_COUNT) && \
 	rm -rf $(OUTPUT_DIR)/g722/lib/$(ANDROID_TARGET_ARCH)
 	mkdir -p $(OUTPUT_DIR)/g722/lib/$(ANDROID_TARGET_ARCH)
 	cp g722/build/libg722.a $(OUTPUT_DIR)/g722/lib/$(ANDROID_TARGET_ARCH)
@@ -177,15 +202,15 @@ g7221:
 	cp g7221/src/.libs/libg722_1.a $(OUTPUT_DIR)/g7221/lib/$(ANDROID_TARGET_ARCH)
 
 .PHONY: gzrtp
-gzrtp:
+gzrtp: check-cmake
 	cd zrtpcpp && \
 	rm -rf build && \
 	mkdir build && \
 	cd build && \
-	cmake .. $(CMAKE_ANDROID_FLAGS) && \
+	$(CMAKE) .. $(CMAKE_ANDROID_FLAGS) && \
 	sed -i -e 's/;-lpthread//' CMakeCache.txt && \
-	cmake .. $(CMAKE_ANDROID_FLAGS) && \
-	cmake --build . -j$(CPU_COUNT)
+	$(CMAKE) .. $(CMAKE_ANDROID_FLAGS) && \
+	$(CMAKE) --build . -j$(CPU_COUNT)
 	rm -rf $(OUTPUT_DIR)/gzrtp/lib/$(ANDROID_TARGET_ARCH)
 	mkdir -p $(OUTPUT_DIR)/gzrtp/lib/$(ANDROID_TARGET_ARCH)
 	cp zrtpcpp/build/clients/no_client/libzrtpcppcore.a $(OUTPUT_DIR)/gzrtp/lib/$(ANDROID_TARGET_ARCH)
@@ -219,11 +244,11 @@ opus:
 	cp opus/.libs/libopus.a $(OUTPUT_DIR)/opus/lib/$(ANDROID_TARGET_ARCH)
 
 .PHONY: sndfile
-sndfile:
+sndfile: check-cmake
 	cd sndfile && \
 	rm -rf build && rm -rf .cache && mkdir build && cd build && \
-	cmake .. $(CMAKE_ANDROID_FLAGS) && \
-	cmake --build . --target sndfile -j$(CPU_COUNT)
+	$(CMAKE) .. $(CMAKE_ANDROID_FLAGS) && \
+	$(CMAKE) --build . --target sndfile -j$(CPU_COUNT)
 	rm -rf $(OUTPUT_DIR)/sndfile/lib/$(ANDROID_TARGET_ARCH)
 	mkdir -p $(OUTPUT_DIR)/sndfile/lib/$(ANDROID_TARGET_ARCH)
 	cp sndfile/build/libsndfile.a $(OUTPUT_DIR)/sndfile/lib/$(ANDROID_TARGET_ARCH)
@@ -289,10 +314,10 @@ ffmpeg-origin:
 	cp ffmpeg-android-maker/output/lib/$(ANDROID_TARGET_ARCH)/*.so $(OUTPUT_DIR)/ffmpeg/lib/$(ANDROID_TARGET_ARCH)
 
 .PHONY: libyuv
-libyuv:
+libyuv: check-cmake
 	cd libyuv && \
 	rm -rf build && rm -rf .cache && mkdir build && cd build && \
-	cmake .. $(CMAKE_ANDROID_FLAGS) -DCMAKE_C_FLAGS="-DLIBYUV_DISABLE_SME" -DCMAKE_CXX_FLAGS="-DLIBYUV_DISABLE_SME" && \
+	$(CMAKE) .. $(CMAKE_ANDROID_FLAGS) -DCMAKE_C_FLAGS="-DLIBYUV_DISABLE_SME" -DCMAKE_CXX_FLAGS="-DLIBYUV_DISABLE_SME" && \
 	make -j$(CPU_COUNT)
 	rm -rf $(OUTPUT_DIR)/libyuv/lib/$(ANDROID_TARGET_ARCH)
 	mkdir -p $(OUTPUT_DIR)/libyuv/lib/$(ANDROID_TARGET_ARCH)
@@ -313,24 +338,24 @@ webrtc:
         #--enable-android-media-codec \
         #--enable-x264 --enable-libaom --enable-libvpx \
 
-libre.a: Makefile
+libre.a: Makefile check-cmake
 	cd re && \
 	rm -rf build && rm -rf .cache && mkdir build && cd build && \
-	cmake .. \
+	$(CMAKE) .. \
 		$(CMAKE_ANDROID_FLAGS) \
 		-DCMAKE_FIND_ROOT_PATH="$(NDK_PATH);$(PWD)/openssl" \
 		-DOPENSSL_VERSION_MAJOR=3 \
 		-DOPENSSL_ROOT_DIR=$(PWD)/openssl && \
-	cmake --build . --target re -j$(CPU_COUNT)
+	$(CMAKE) --build . --target re -j$(CPU_COUNT)
 
 
 
 libbaresip-deps: Makefile g729 g722 g7221 gzrtp openssl opus sndfile png ffmpeg libyuv webrtc libre.a
 
-libbaresip:
+libbaresip: check-cmake
 	cd baresip && \
 	rm -rf build && rm -rf .cache && mkdir build && cd build && \
-	cmake .. \
+	$(CMAKE) .. \
 		$(CMAKE_ANDROID_FLAGS) \
 		-DCMAKE_FIND_ROOT_PATH="$(PWD)/amr;$(PWD)/vo-amrwbenc;$(PWD)/openssl" \
 		-DSTATIC=ON \
@@ -376,7 +401,7 @@ libbaresip:
 		-DAPP_MODULES_DIR=$(PWD)/baresip-app-modules \
 		-DAPP_MODULES=$(APP_MODULES) \
 		-DMODULES=$(MODULES) && \
-	cmake --build . --target baresip -j$(CPU_COUNT)
+	$(CMAKE) --build . --target baresip -j$(CPU_COUNT)
 	rm -rf $(OUTPUT_DIR)/re/lib/$(ANDROID_TARGET_ARCH)
 	mkdir -p $(OUTPUT_DIR)/re/lib/$(ANDROID_TARGET_ARCH)
 	cp re/build/libre.a $(OUTPUT_DIR)/re/lib/$(ANDROID_TARGET_ARCH)

@@ -12,12 +12,40 @@
 * OS: Debian 13 (或 Ubuntu 22.04+)，`uname -s` 自动识别 `linux-x86_64` / `darwin-x86_64`
 * Android NDK **r27c** ，版本需与 `baresip-studio/app/build.gradle.kts` 中的 `ndkVersion` 保持一致
 * Android SDK (仅 `ffmpeg-android-maker` 需要 `ANDROID_SDK_HOME`)
+* **CMake 3.22.1（推荐）**：本项目 `re/baresip` 要求 `3.18...4.0`，部分第三方库（`sndfile 3.1`/`zrtpcpp 3.4.1`）在系统 `cmake 4.x` 下会报 `Compatibility with <3.5 has been removed`。推荐用 `mise` 钉死版本，`Makefile` 已做兼容：
+  * 有 `mise`：自动走 `mise exec -- cmake`（项目 `mise.toml` 钉 `3.22.1`，全局默认 `4.4.3`），不受 `Makefile:75 PATH` 覆盖影响
+  * 无 `mise`：回落系统 `cmake`，`make check-cmake` 会提示 `WARN: Recommended cmake 3.22.1`
 * 依赖工具:
 
 ```bash
-apt install wget cmake make libtool m4 automake pkg-config autotools-dev git zip unzip
+apt install wget make libtool m4 automake pkg-config autotools-dev git zip unzip
 # opus/amr/g7221 需要 autoreconf/autogen
+# cmake 推荐用 mise 管理（见下），或 apt install cmake（需 3.22.1 附近版本）
 ```
+
+### 1.1 推荐：用 mise 管理多版本 cmake
+
+```bash
+# 安装 mise
+curl https://mise.run | sh
+echo 'eval "$(~/.local/bin/mise activate zsh)"' >> ~/.zshrc  # 或 bash
+exec $SHELL
+
+# 全局默认用 4.x 最新（其它项目可用）
+mise use --global cmake@4.4.3
+
+# 本项目钉死 3.22.1（仓库已带 mise.toml，首次进入会自动安装）
+cd libbaresip-android
+mise install          # 根据 mise.toml 安装 3.22.1
+mise current          # 3.22.1
+cmake --version       # 3.22.1
+
+# 校验 Makefile 探测逻辑
+make check-cmake      # Using mise cmake: ... (3.22.1)
+cd ~ && cmake --version # 4.4.3（全局）
+```
+
+无 `mise` 时直接用系统 `cmake` 亦可，`make <target>` 前会执行 `check-cmake` 提示版本。
 
 ## 2. 克隆本仓库
 
