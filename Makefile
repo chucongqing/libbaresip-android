@@ -344,8 +344,10 @@ libre.a: Makefile check-cmake
 	$(CMAKE) .. \
 		$(CMAKE_ANDROID_FLAGS) \
 		-DCMAKE_FIND_ROOT_PATH="$(NDK_PATH);$(PWD)/openssl" \
-		-DOPENSSL_VERSION_MAJOR=3 \
-		-DOPENSSL_ROOT_DIR=$(PWD)/openssl && \
+		-DOPENSSL_ROOT_DIR=$(PWD)/openssl \
+		-DOPENSSL_CRYPTO_LIBRARY=$(PWD)/openssl/libcrypto.a \
+		-DOPENSSL_SSL_LIBRARY=$(PWD)/openssl/libssl.a \
+		-DOPENSSL_INCLUDE_DIR=$(PWD)/openssl/include && \
 	$(CMAKE) --build . --target re -j$(CPU_COUNT)
 
 
@@ -374,13 +376,16 @@ libbaresip: check-cmake
 		-DFFMPEG_avutil_LIBRARY=$(OUTPUT_DIR)/ffmpeg/lib/$(ANDROID_TARGET_ARCH)/libavutil.so \
 		-DFFMPEG_avutil_INCLUDE_DIR=$(OUTPUT_DIR)/ffmpeg/include \
 		-DPNG_INCLUDE_DIR=$(PWD)/png \
-		-DPNG_LIBRARY=$(OUPUT_DIR)/png/lib/$(ANDROID_TARGET_ARCH)/libpng.a \
+		-DPNG_LIBRARY=$(OUTPUT_DIR)/png/lib/$(ANDROID_TARGET_ARCH)/libpng.a \
 		-DAAUDIO_INCLUDE_DIR=${TOOLCHAIN}/sysroot/usr/include \
 		-DAAUDIO_LIBRARY=${TOOLCHAIN}/sysroot/usr/lib/$(TARGET)/$(API_LEVEL)/libaaudio.so \
 		-Dre_DIR=$(PWD)/re/cmake \
 		-DRE_LIBRARY=$(PWD)/re/build/libre.a \
 		-DRE_INCLUDE_DIR=$(PWD)/re/include \
 		-DOPENSSL_ROOT_DIR=$(PWD)/openssl \
+		-DOPENSSL_CRYPTO_LIBRARY=$(PWD)/openssl/libcrypto.a \
+		-DOPENSSL_SSL_LIBRARY=$(PWD)/openssl/libssl.a \
+		-DOPENSSL_INCLUDE_DIR=$(PWD)/openssl/include \
 		-DG729_INCLUDE_DIR=$(PWD)/bcg729/include \
 		-DOPUS_INCLUDE_DIR=$(PWD)/opus/include_opus \
 		-DOPUS_LIBRARY=$(OUTPUT_DIR)/opus/lib/$(ANDROID_TARGET_ARCH)/libopus.a \
