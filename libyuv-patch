@@ -1,0 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 77e0527f..a2d7f832 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -16,6 +16,10 @@ set ( ly_lib_name	yuv )
+ set ( ly_lib_static	${ly_lib_name} )
+ set ( ly_lib_shared	${ly_lib_name}_shared )
+ 
++if(ANDROID)
++    add_definitions(-DLIBYUV_DISABLE_SME)
++endif()
++
+ # We cannot use GLOB here since we want to be able to separate out files that
+ # need particular flags to enable architecture extensions like AArch64's SVE.
+ # TODO: More of these files could be separated out for different architectures.

@@ -292,7 +292,7 @@ ffmpeg-origin:
 libyuv:
 	cd libyuv && \
 	rm -rf build && rm -rf .cache && mkdir build && cd build && \
-	cmake .. $(CMAKE_ANDROID_FLAGS) && \
+	cmake .. $(CMAKE_ANDROID_FLAGS) -DCMAKE_C_FLAGS="-DLIBYUV_DISABLE_SME" -DCMAKE_CXX_FLAGS="-DLIBYUV_DISABLE_SME" && \
 	make -j$(CPU_COUNT)
 	rm -rf $(OUTPUT_DIR)/libyuv/lib/$(ANDROID_TARGET_ARCH)
 	mkdir -p $(OUTPUT_DIR)/libyuv/lib/$(ANDROID_TARGET_ARCH)
@@ -426,6 +426,7 @@ patch-src:
 	patch -d g7221 -p1 < g7221-patch
 	patch -d re -p1 < re-patch
 	patch -d ffmpeg-android-maker -p1 < ffmpeg-android-maker.patch
+	patch -d libyuv -p1 < libyuv-patch
 
 .PHONY: download-webrtc
 
